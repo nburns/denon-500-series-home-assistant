@@ -4,7 +4,7 @@
 
 Home Assistant integration that controls a Denon AVR-S510BT (and probably the
 other "500 Series Remote" models) over the receiver's Bluetooth serial port.
-It provides a media player, tuner and Quick Select controls (see Setup). The
+It provides a media player, tuner and Quick Select controls. The
 protocol is documented in [PROTOCOL.md](PROTOCOL.md).
 
 ## How it works
@@ -13,6 +13,25 @@ The integration keeps one RFCOMM connection to SPP channel 2 open from inside
 Home Assistant. It uses only the Python standard library (no add-on, broker or
 extra packages) and updates state from what the receiver pushes, without
 polling. If the link drops, it reconnects with backoff (5 s up to 5 min).
+
+## What you get
+
+- a media player with power, volume, mute and input selection. On FM/AM it
+  shows the station and preset, and next/previous step through presets. On
+  USB it adds play, pause, next and previous.
+- Quick Select 1-4 buttons and a Next sound mode button.
+- a Tuner preset picker and a Tuning mode (auto/manual) setting, available
+  while FM or AM is the input.
+- a `denon_500_series.store_preset` action that saves the playing station to
+  a preset slot (1-56).
+
+Commands for presets, tuning mode, USB playback and sound mode are taken from
+the official app but not yet confirmed on a receiver; debug logging shows
+what is sent and received.
+
+The integration shows as unavailable while the Bluetooth link is down and reconnects on its
+own. Settings → Devices & services → the integration → Download diagnostics
+gives the current receiver state for bug reports.
 
 ## Requirements
 
@@ -63,26 +82,6 @@ Settings → Devices & services → Denon 500 Series → ⋮ → Enable debug lo
 retry, then disable it to download the log. The log shows the adapter used,
 every device the scan sees with its signal strength and pairing state, each
 BlueZ call and its error, and the device's state after pairing.
-
-You get:
-
-- a media player with power, volume, mute and input selection. On FM/AM it
-  shows the station and preset, and next/previous step through presets. On
-  USB it adds play, pause, next and previous.
-- Quick Select 1-4 buttons and a Next sound mode button.
-- a Tuner preset picker and a Tuning mode (auto/manual) setting, available
-  while FM or AM is the input.
-- a `denon_500_series.store_preset` action that saves the playing station to
-  a preset slot (1-56).
-
-Commands for presets, tuning mode, USB playback and sound mode are taken from
-the official app but not yet confirmed on a receiver; debug logging shows
-what is sent and received.
-
-The integration
-shows as unavailable while the Bluetooth link is down and reconnects on its
-own. Settings → Devices & services → the integration → Download diagnostics
-gives the current receiver state for bug reports.
 
 ## Development
 

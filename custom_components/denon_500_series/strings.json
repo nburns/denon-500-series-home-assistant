@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Pick the receiver from the devices paired with this Home Assistant host, or type its Bluetooth address. Pair it first (for example with bluetoothctl). Its \"BluetoothStandby\" setting should be on.",
+        "data": {
+          "address": "Receiver",
+          "name": "Name"
+        },
+        "data_description": {
+          "address": "A paired device, or an address such as 08:EF:3B:36:B7:FF"
+        }
+      }
+    },
+    "error": {
+      "invalid_address": "Not a valid Bluetooth address.",
+      "cannot_connect": "Could not open the receiver's control channel. Check that it is paired, in range and powered on (or in standby with BluetoothStandby on)."
+    },
+    "abort": {
+      "already_configured": "This receiver is already configured."
+    }
+  }
+}

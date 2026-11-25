@@ -1,8 +1,10 @@
+<p align="center"><img src="assets/badge.png" alt="" width="128" height="128"></p>
+
 # Denon 500 Series for Home Assistant
 
 Home Assistant integration that controls a Denon AVR-S510BT (and probably the
 other "500 Series Remote" models) over the receiver's Bluetooth serial port.
-It provides a `media_player` with power, volume, mute and source selection. The
+It provides a media player, tuner and Quick Select controls (see Setup). The
 protocol is documented in [PROTOCOL.md](PROTOCOL.md).
 
 ## How it works

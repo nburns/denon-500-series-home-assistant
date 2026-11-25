@@ -67,3 +67,44 @@ def test_quick_select_matches_the_app() -> None:
     assert protocol.quick_select(4).encode() == bytes.fromhex("41 54 00 08 02 00 04 fa")
     with pytest.raises(ValueError):
         protocol.quick_select(5)
+
+
+@pytest.mark.parametrize(
+    ("frame", "app_bytes"),
+    [
+        (protocol.preset_up(Source.FM), [0x81, 7, 0]),
+        (protocol.preset_down(Source.FM), [0x81, 8, 0]),
+        (protocol.recall_preset(Source.FM, 5), [0x81, 56, 1, 5]),
+        (protocol.store_preset(Source.AM, 56), [0x82, 54, 1, 56]),
+        (protocol.tuning_mode(Source.FM, auto=True), [0x81, 4, 1, 1]),
+        (protocol.next_track(Source.USB1), [0x40, 5, 0]),
+        (protocol.previous_track(Source.USB1), [0x40, 6, 0]),
+        (protocol.play(Source.USB1), [0x40, 10, 0]),
+        (protocol.pause(Source.USB1), [0x40, 11, 0]),
+    ],
+)
+def test_tuner_and_usb_frames_match_the_app(frame: Frame, app_bytes: list[int]) -> None:
+    body = bytes(app_bytes)
+    assert frame.encode() == b"AT" + body + bytes([protocol.checksum(body[3:])])
+
+
+def test_tuner_commands_reject_other_inputs() -> None:
+    with pytest.raises(ValueError):
+        protocol.preset_up(Source.USB1)
+    with pytest.raises(ValueError):
+        protocol.play(Source.FM)
+    with pytest.raises(ValueError):
+        protocol.recall_preset(Source.FM, 57)
+
+
+def test_decodes_tuner_replies() -> None:
+    assert protocol.decode(Frame(Source.FM, 0x31, b"\x01\x02089100")) == protocol.TunerFrequency(
+        Source.FM, 2, "FM 89.10 MHz"
+    )
+    assert protocol.decode(Frame(Source.AM, 0x31, b"\x00\x00000520")) == protocol.TunerFrequency(
+        Source.AM, None, "AM 520 kHz"
+    )
+    table = protocol.decode(Frame(Source.FM, 0x32, bytes([10, 0x00, 0x20, 0x80, 0x00, 0x80, 0x05])))
+    assert isinstance(table, protocol.PresetTable)
+    assert [p.label for p in table.presets] == ["FM 89.10 MHz", "AM 520 kHz", "AM 570 kHz"]
+    assert protocol.decode(Frame(Source.FM, 0x04, b"\x00")) == protocol.TuningMode(Source.FM, auto=False)

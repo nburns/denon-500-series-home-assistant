@@ -47,6 +47,11 @@ class ReceiverState:
     volume: protocol.Volume | None = None
     muted: bool | None = None
     sound_mode: str | None = None
+    tuner_station: str | None = None
+    tuner_preset: int | None = None
+    presets: tuple[protocol.Preset, ...] | None = None
+    am_step_khz: int | None = None
+    tuning_auto: bool | None = None
 
 
 @dataclass
@@ -74,6 +79,7 @@ class ReceiverConnection:
         # Latest requested raw volume; a seek in progress follows it so slider drags don't queue stale targets.
         self._volume_target: int | None = None
         self._task: asyncio.Task[None] | None = None
+        self._background: set[asyncio.Task[None]] = set()
         self._connected = asyncio.Event()
         self.state = ReceiverState()
 
@@ -154,7 +160,10 @@ class ReceiverConnection:
             case protocol.BluetoothStandbyState(enabled=enabled):
                 s = replace(s, bluetooth_standby=enabled)
             case protocol.CurrentSource(source=source):
-                s = replace(s, source=source)
+                if source != s.source:
+                    s = replace(s, source=source, tuner_station=None, tuner_preset=None)
+                    if source in protocol.TUNER_SOURCES:
+                        self._send_soon(protocol.query_frequency(source))
             case protocol.SupportedSources(sources=sources):
                 s = replace(s, supported_sources=sources)
             case protocol.VolumeState(source=source, volume=volume):
@@ -165,6 +174,14 @@ class ReceiverConnection:
                 s = replace(s, source=source, sound_mode=name)
             case protocol.FeatureState(source=source, muted=muted, volume=volume, sound_mode=mode):
                 s = replace(s, source=source, muted=muted, volume=volume, sound_mode=mode)
+            case protocol.TunerFrequency(preset=preset, label=label):
+                s = replace(s, tuner_station=label, tuner_preset=preset)
+            case protocol.PresetTable(am_step_khz=step, presets=presets):
+                s = replace(s, presets=presets, am_step_khz=step)
+            case protocol.PresetStored(number=number, hi=hi, lo=lo):
+                s = self._with_stored_preset(s, number, hi, lo)
+            case protocol.TuningMode(auto=auto):
+                s = replace(s, tuning_auto=auto)
             case protocol.Unrecognized():
                 pass
         self._set_state(s)
@@ -173,6 +190,25 @@ class ReceiverConnection:
                 waiter.future.set_result(event)
                 self._waiters.remove(waiter)
                 break
+
+    @staticmethod
+    def _with_stored_preset(s: ReceiverState, number: int, hi: int, lo: int) -> ReceiverState:
+        if s.presets is None or s.am_step_khz is None:
+            _LOGGER.debug("preset %d stored before the preset table arrived; not tracked", number)
+            return s
+        stored = protocol.decode_preset(number, hi, lo, s.am_step_khz)
+        return replace(s, presets=tuple(stored if p.number == number else p for p in s.presets))
+
+    def _send_soon(self, frame: Frame) -> None:
+        task = asyncio.get_running_loop().create_task(self._send_logged(frame))
+        self._background.add(task)
+        task.add_done_callback(self._background.discard)
+
+    async def _send_logged(self, frame: Frame) -> None:
+        try:
+            await self._send(frame)
+        except (OSError, NotConnectedError) as err:
+            _LOGGER.warning("could not send %s: %s", frame, err)
 
     def _set_state(self, state: ReceiverState) -> None:
         if state == self.state:
@@ -277,6 +313,60 @@ class ReceiverConnection:
     async def press_sound_mode(self) -> str:
         async with self._command_lock:
             return (await self._request(protocol.sound_mode(self._active_source()), protocol.SoundModeName)).name
+
+    def _active_tuner(self) -> Source:
+        active = self._active_source()
+        if active not in protocol.TUNER_SOURCES:
+            raise RuntimeError(f"the receiver is on {active.name}, not the tuner")
+        return active
+
+    def _active_usb(self) -> Source:
+        active = self._active_source()
+        if active not in protocol.USB_SOURCES:
+            raise RuntimeError(f"the receiver is on {active.name}, not USB")
+        return active
+
+    async def _tuner_command(self, frame: Frame) -> None:
+        """Sends a tuner command, then asks for the frequency so the station shown follows it."""
+        async with self._command_lock:
+            await self._send(frame)
+            await self._send(protocol.query_frequency(Source(frame.major)))
+
+    async def next_track(self) -> None:
+        """Next preset on the tuner, next track on USB."""
+        active = self._active_source()
+        if active in protocol.TUNER_SOURCES:
+            await self._tuner_command(protocol.preset_up(active))
+            return
+        async with self._command_lock:
+            await self._send(protocol.next_track(self._active_usb()))
+
+    async def previous_track(self) -> None:
+        active = self._active_source()
+        if active in protocol.TUNER_SOURCES:
+            await self._tuner_command(protocol.preset_down(active))
+            return
+        async with self._command_lock:
+            await self._send(protocol.previous_track(self._active_usb()))
+
+    async def play(self) -> None:
+        async with self._command_lock:
+            await self._send(protocol.play(self._active_usb()))
+
+    async def pause(self) -> None:
+        async with self._command_lock:
+            await self._send(protocol.pause(self._active_usb()))
+
+    async def recall_preset(self, number: int) -> None:
+        await self._tuner_command(protocol.recall_preset(self._active_tuner(), number))
+
+    async def store_preset(self, number: int) -> None:
+        async with self._command_lock:
+            await self._send(protocol.store_preset(self._active_tuner(), number))
+
+    async def set_tuning_mode(self, auto: bool) -> None:
+        async with self._command_lock:
+            await self._send(protocol.tuning_mode(self._active_tuner(), auto))
 
     async def set_bluetooth_standby(self, enabled: bool) -> None:
         async with self._command_lock:

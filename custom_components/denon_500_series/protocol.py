@@ -54,6 +54,7 @@ class Source(IntEnum):
 
 
 TUNER_SOURCES = frozenset({Source.FM, Source.AM, Source.DAB})
+USB_SOURCES = frozenset({Source.USB1, Source.USB2})
 _SOURCE_CODES = frozenset(s.value for s in Source)
 
 
@@ -78,8 +79,19 @@ class SourceCommand(IntEnum):
     VOLUME_DOWN = 0x01
     VOLUME = 0x02
     FEATURE_STATE = 0x03
+    TUNING_MODE = 0x04
+    NEXT_TRACK = 0x05
+    PREVIOUS_TRACK = 0x06
+    PRESET_UP = 0x07
+    PRESET_DOWN = 0x08
+    PLAY = 0x0A
+    PAUSE = 0x0B
     MUTE = 0x1D
     SOUND_MODE = 0x1E
+    FREQUENCY = 0x31
+    PRESET_TABLE = 0x32
+    STORE_PRESET = 0x36
+    RECALL_PRESET = 0x38
 
 
 QUERY = 0x02
@@ -216,6 +228,68 @@ def query_feature_state(active: Source) -> Frame:
     return Frame(active, SourceCommand.FEATURE_STATE)
 
 
+PRESET_COUNT = 56
+
+
+def _tuner(active: Source) -> Source:
+    if active not in TUNER_SOURCES:
+        raise ValueError(f"{active.name} is not a tuner input")
+    return active
+
+
+def _usb(active: Source) -> Source:
+    if active not in USB_SOURCES:
+        raise ValueError(f"{active.name} is not a USB input")
+    return active
+
+
+def _preset_number(number: int) -> int:
+    if not 1 <= number <= PRESET_COUNT:
+        raise ValueError(f"preset must be 1-{PRESET_COUNT}, got {number}")
+    return number
+
+
+def query_frequency(active: Source) -> Frame:
+    return Frame(_tuner(active), SourceCommand.FREQUENCY)
+
+
+def preset_up(active: Source) -> Frame:
+    return Frame(_tuner(active), SourceCommand.PRESET_UP)
+
+
+def preset_down(active: Source) -> Frame:
+    return Frame(_tuner(active), SourceCommand.PRESET_DOWN)
+
+
+def recall_preset(active: Source, number: int) -> Frame:
+    return Frame(_tuner(active), SourceCommand.RECALL_PRESET, bytes([_preset_number(number)]))
+
+
+def store_preset(active: Source, number: int) -> Frame:
+    """Stores the current station in preset ``number``."""
+    return Frame(_tuner(active), SourceCommand.STORE_PRESET, bytes([_preset_number(number)]))
+
+
+def tuning_mode(active: Source, auto: bool) -> Frame:
+    return Frame(_tuner(active), SourceCommand.TUNING_MODE, bytes([int(auto)]))
+
+
+def next_track(active: Source) -> Frame:
+    return Frame(_usb(active), SourceCommand.NEXT_TRACK)
+
+
+def previous_track(active: Source) -> Frame:
+    return Frame(_usb(active), SourceCommand.PREVIOUS_TRACK)
+
+
+def play(active: Source) -> Frame:
+    return Frame(_usb(active), SourceCommand.PLAY)
+
+
+def pause(active: Source) -> Frame:
+    return Frame(_usb(active), SourceCommand.PAUSE)
+
+
 @dataclass(frozen=True)
 class Volume:
     raw: int
@@ -278,6 +352,46 @@ class FeatureState:
 
 
 @dataclass(frozen=True)
+class Preset:
+    number: int
+    am: bool
+    frequency: float
+    """MHz for FM, kHz for AM."""
+
+    @property
+    def label(self) -> str:
+        return f"AM {self.frequency:.0f} kHz" if self.am else f"FM {self.frequency:.2f} MHz"
+
+
+@dataclass(frozen=True)
+class TunerFrequency:
+    source: Source
+    preset: int | None
+    label: str
+
+
+@dataclass(frozen=True)
+class PresetTable:
+    am_step_khz: int
+    presets: tuple[Preset, ...]
+
+
+@dataclass(frozen=True)
+class PresetStored:
+    """Raw preset entry; the AM step needed to decode it only comes with the full table."""
+
+    number: int
+    hi: int
+    lo: int
+
+
+@dataclass(frozen=True)
+class TuningMode:
+    source: Source
+    auto: bool
+
+
+@dataclass(frozen=True)
 class Unrecognized:
     frame: Frame
 
@@ -291,6 +405,10 @@ Event = (
     | MuteState
     | SoundModeName
     | FeatureState
+    | TunerFrequency
+    | PresetTable
+    | PresetStored
+    | TuningMode
     | Unrecognized
 )
 
@@ -310,6 +428,37 @@ def _on_off(frame: Frame) -> bool:
 
 def _text(raw: bytes) -> str:
     return raw.decode("ascii", errors="replace").strip(" \x00")
+
+
+# The app uses the 76.0 MHz base only for Japanese models; the 500 series sold elsewhere starts at 87.5.
+_FM_BASE_MHZ = 87.5
+
+
+def decode_preset(number: int, hi: int, lo: int, am_step_khz: int) -> Preset:
+    value = (hi & 0x0F) << 8 | lo
+    if hi & 0x80:
+        base = 522 if am_step_khz == 9 else 520
+        return Preset(number, am=True, frequency=base + am_step_khz * value)
+    return Preset(number, am=False, frequency=_FM_BASE_MHZ + 0.05 * value)
+
+
+def _frequency(source: Source, p: bytes) -> TunerFrequency:
+    digits = _text(p[2:8])
+    if not digits.isdigit():
+        raise ProtocolError(f"tuner frequency is not numeric: {p.hex(' ')}")
+    preset = p[1] if p[0] else None
+    if source is Source.AM:
+        return TunerFrequency(source, preset, f"AM {int(digits)} kHz")
+    return TunerFrequency(source, preset, f"FM {int(digits) / 1000:.2f} MHz")
+
+
+def _preset_table(p: bytes) -> PresetTable:
+    am_step = p[0]
+    pairs = p[1:]
+    return PresetTable(
+        am_step,
+        tuple(decode_preset(i // 2 + 1, pairs[i], pairs[i + 1], am_step) for i in range(0, len(pairs) - 1, 2)),
+    )
 
 
 def decode(frame: Frame) -> Event:
@@ -342,6 +491,14 @@ def decode(frame: Frame) -> Event:
             return MuteState(source, p[0] != 0)
         case SourceCommand.SOUND_MODE if len(p) >= 1:
             return SoundModeName(source, _text(p[1:]))
+        case SourceCommand.FREQUENCY if len(p) >= 8 and source in TUNER_SOURCES:
+            return _frequency(source, p)
+        case SourceCommand.PRESET_TABLE if len(p) >= 3 and source in TUNER_SOURCES:
+            return _preset_table(p)
+        case SourceCommand.STORE_PRESET if len(p) == 3 and source in TUNER_SOURCES:
+            return PresetStored(p[0], p[1], p[2])
+        case SourceCommand.TUNING_MODE if len(p) == 1 and source in TUNER_SOURCES:
+            return TuningMode(source, p[0] == 1)
         case SourceCommand.FEATURE_STATE if len(p) >= 17 and source not in TUNER_SOURCES:
             return FeatureState(
                 source,

@@ -65,6 +65,12 @@ source, so the client has to know the current source first (`AT 00 0B 00`).
 | `AT 00 06 00`                  | query supported features (reply minor `06`, 65+ bytes; see below) |
 | `AT 00 0E 00`                  | query receiver name (reply minor `0E`: encoding byte + name) |
 | `AT <tuner> 31 00`             | query tuner frequency |
+| `AT <tuner> 07 00` / `08 00`   | preset up / down (app's right / left arrows) |
+| `AT <tuner> 38 01 <n>`         | recall preset n (1-56) |
+| `AT <tuner> 36 01 <n>`         | store the current station in preset n; reply `36 [n, hi, lo]` |
+| `AT <tuner> 04 01 <0/1>`       | tuning mode manual / auto |
+| `AT <usb> 0A 00` / `0B 00`     | play / pause |
+| `AT <usb> 05 00` / `06 00`     | next / previous track |
 | `AT 00 0D 09 ...`              | A2DP profile management (phone MAC); not needed for control |
 
 If Bluetooth standby is off, the receiver turns its radio off in standby. The

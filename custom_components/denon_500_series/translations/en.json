@@ -71,6 +71,33 @@
     "button": {
       "quick_select": {
         "name": "Quick Select {slot}"
+      },
+      "sound_mode": {
+        "name": "Next sound mode"
+      }
+    },
+    "select": {
+      "tuner_preset": {
+        "name": "Tuner preset"
+      },
+      "tuning_mode": {
+        "name": "Tuning mode",
+        "state": {
+          "auto": "Auto",
+          "manual": "Manual"
+        }
+      }
+    }
+  },
+  "services": {
+    "store_preset": {
+      "name": "Store tuner preset",
+      "description": "Saves the station the tuner is playing to a preset slot.",
+      "fields": {
+        "preset": {
+          "name": "Preset",
+          "description": "Preset slot, 1-56."
+        }
       }
     }
   }

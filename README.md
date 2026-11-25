@@ -62,8 +62,22 @@ retry, then disable it to download the log. The log shows the adapter used,
 every device the scan sees with its signal strength and pairing state, each
 BlueZ call and its error, and the device's state after pairing.
 
-You get a media player with power, volume, mute and input selection, plus
-Quick Select 1-4 buttons that recall the receiver's saved presets. It
+You get:
+
+- a media player with power, volume, mute and input selection. On FM/AM it
+  shows the station and preset, and next/previous step through presets. On
+  USB it adds play, pause, next and previous.
+- Quick Select 1-4 buttons and a Next sound mode button.
+- a Tuner preset picker and a Tuning mode (auto/manual) setting, available
+  while FM or AM is the input.
+- a `denon_500_series.store_preset` action that saves the playing station to
+  a preset slot (1-56).
+
+Commands for presets, tuning mode, USB playback and sound mode are taken from
+the official app but not yet confirmed on a receiver; debug logging shows
+what is sent and received.
+
+The integration
 shows as unavailable while the Bluetooth link is down and reconnects on its
 own. Settings → Devices & services → the integration → Download diagnostics
 gives the current receiver state for bug reports.

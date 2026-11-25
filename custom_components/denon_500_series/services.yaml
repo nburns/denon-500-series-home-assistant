@@ -1,0 +1,13 @@
+store_preset:
+  target:
+    entity:
+      integration: denon_500_series
+      domain: media_player
+  fields:
+    preset:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 56
+          mode: box

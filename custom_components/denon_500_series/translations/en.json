@@ -2,13 +2,55 @@
   "config": {
     "step": {
       "user": {
-        "description": "Pick the receiver. To add a new one, turn the receiver on, then press and hold BLUETOOTH on its remote for about 3 seconds to start pairing mode, and choose \"Scan for devices\". The receiver's \"BluetoothStandby\" setting should be on.",
+        "title": "Add a receiver",
+        "description": "To add a receiver that isn't paired with this host yet, turn the receiver on and hold BLUETOOTH on its remote for about 3 seconds so it enters pairing mode, then scan. Its \"BluetoothStandby\" setting should be on.",
+        "menu_options": {
+          "scan": "Scan for receivers",
+          "paired": "Choose a paired device",
+          "manual": "Enter a Bluetooth address"
+        }
+      },
+      "not_found": {
+        "title": "No receiver found",
+        "description": "No receiver showed up. Check that it's on and in range, hold BLUETOOTH on its remote for about 3 seconds to restart pairing mode, then scan again. If another device (a phone, a computer) is connected to it, disconnect that first.",
+        "menu_options": {
+          "scan": "Scan again",
+          "manual": "Enter a Bluetooth address"
+        }
+      },
+      "scan_failed": {
+        "title": "Scan failed",
+        "description": "Could not scan for Bluetooth devices. Check that this host has a Bluetooth adapter and that Home Assistant can reach BlueZ.",
+        "menu_options": {
+          "scan": "Try again",
+          "manual": "Enter a Bluetooth address"
+        }
+      },
+      "found": {
+        "title": "Pick the receiver",
+        "description": "Devices found nearby. Picking one pairs it with this host.",
+        "data": {
+          "address": "Receiver",
+          "name": "Name"
+        }
+      },
+      "paired": {
+        "title": "Pick the receiver",
+        "description": "Classic Bluetooth devices already paired with this host.",
+        "data": {
+          "address": "Receiver",
+          "name": "Name"
+        }
+      },
+      "manual": {
+        "title": "Enter the address",
+        "description": "The receiver must already be paired with this host.",
         "data": {
           "address": "Receiver",
           "name": "Name"
         },
         "data_description": {
-          "address": "A device from the list, or an address such as 00:11:22:33:44:55"
+          "address": "For example 00:11:22:33:44:55"
         }
       }
     },
@@ -19,9 +61,7 @@
     "error": {
       "invalid_address": "Not a valid Bluetooth address.",
       "cannot_connect": "Could not open the receiver's control channel. Check that it is paired, in range and powered on (or in standby with BluetoothStandby on).",
-      "scan_failed": "Could not scan for Bluetooth devices. Check that the host has a Bluetooth adapter and that Home Assistant can reach BlueZ.",
-      "no_devices_found": "No receiver found. Hold BLUETOOTH on the receiver's remote for about 3 seconds to start pairing mode, then scan again.",
-      "pairing_failed": "Pairing failed. Hold BLUETOOTH on the receiver's remote for about 3 seconds, scan again and retry."
+      "pairing_failed": "Pairing failed. Turn the receiver on and hold BLUETOOTH on its remote for about 3 seconds, then try again."
     },
     "abort": {
       "already_configured": "This receiver is already configured."

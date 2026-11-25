@@ -4,5 +4,6 @@
   <path d="M404 330v8a8 8 0 0 0 8 8h48a8 8 0 0 0 8-8v-8"/>
   <circle cx="77" cy="228" r="27"/>
   <circle cx="436" cy="228" r="35"/>
-  <rect x="136" y="203" width="240" height="39" rx="4"/>
+  <rect x="136" y="200" width="240" height="36" rx="4"/>
+  <path d="M127 330V258H385V330"/>
 </svg>

@@ -42,8 +42,9 @@ polling. If the link drops, it reconnects with backoff (5 s up to 5 min).
      Classic Bluetooth devices.
    - **Enter a Bluetooth address**: for a receiver that is already paired.
 
-Pairing from the form uses Bluetooth's Just Works method, with no PIN. If the
-receiver insists on a PIN, pair it with `bluetoothctl` instead, then pick it
+Pairing from the form needs no PIN (the S510BT shows none). If BlueZ forgot
+the receiver since the scan, pairing scans for it again first. If a receiver
+does ask for a PIN, "0000" is sent. If that fails, pair it with `bluetoothctl` instead, then pick it
 from the list. `bluetoothctl` is available in the Terminal & SSH add-on, on the
 HA OS console (type `login`), or with `docker exec -it homeassistant
 bluetoothctl`:
@@ -53,6 +54,13 @@ scan on
 pair 08:EF:3B:36:B7:FF
 scan off
 ```
+
+### Troubleshooting
+
+Settings → Devices & services → Denon 500 Series → ⋮ → Enable debug logging,
+retry, then disable it to download the log. The log shows the adapter used,
+every device the scan sees with its signal strength and pairing state, each
+BlueZ call and its error, and the device's state after pairing.
 
 You get one media player with power, volume, mute and input selection. It
 shows as unavailable while the Bluetooth link is down and reconnects on its

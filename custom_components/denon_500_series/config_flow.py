@@ -49,6 +49,8 @@ class DenonBtConfigFlow(ConfigFlow, domain=DOMAIN):
         # Form step to return to when pairing or the connection test fails.
         self._origin = "found"
         self._pending_error: str | None = None
+        # Shown inside the pairing_failed and cannot_connect messages.
+        self._error_detail = ""
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         try:
@@ -56,6 +58,7 @@ class DenonBtConfigFlow(ConfigFlow, domain=DOMAIN):
         except BluezError as err:
             _LOGGER.warning("cannot list paired Bluetooth devices: %s", err)
             self._paired = []
+        _LOGGER.debug("setup started; unconfigured paired devices: %s", self._paired)
         options = ["scan", "manual"]
         if self._paired:
             options.insert(1, "paired")
@@ -63,6 +66,7 @@ class DenonBtConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_scan(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if self._scan_task is None:
+            _LOGGER.debug("starting scan")
             self._scan_task = self.hass.async_create_task(scan_classic_devices(SCAN_SECONDS))
         if not self._scan_task.done():
             return self.async_show_progress(step_id="scan", progress_action="scan", progress_task=self._scan_task)
@@ -73,8 +77,8 @@ class DenonBtConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_show_progress_done(next_step_id="scan_failed")
         finally:
             self._scan_task = None
-        _LOGGER.debug("scan found %s", devices)
         self._found = self._unconfigured([d for d in devices if not d.paired])
+        _LOGGER.debug("scan offers %s", self._found)
         if not self._found:
             return self.async_show_progress_done(next_step_id="not_found")
         return self.async_show_progress_done(next_step_id="found")
@@ -110,11 +114,14 @@ class DenonBtConfigFlow(ConfigFlow, domain=DOMAIN):
                 probatio.Required(CONF_NAME, default=self._name): str,
             }
         )
-        return self.async_show_form(step_id="manual", data_schema=schema, errors=errors)
+        return self.async_show_form(
+            step_id="manual", data_schema=schema, errors=errors, description_placeholders={"detail": self._error_detail}
+        )
 
     async def async_step_pair(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         address = self._require_address()
         if self._pair_task is None:
+            _LOGGER.debug("pairing with %s", address)
             self._pair_task = self.hass.async_create_task(pair(address))
         if not self._pair_task.done():
             return self.async_show_progress(step_id="pair", progress_action="pair", progress_task=self._pair_task)
@@ -123,6 +130,7 @@ class DenonBtConfigFlow(ConfigFlow, domain=DOMAIN):
         except (BluezError, TimeoutError) as err:
             _LOGGER.warning("pairing with %s failed: %s", address, err)
             self._pending_error = "pairing_failed"
+            self._error_detail = str(err) or type(err).__name__
             return self.async_show_progress_done(next_step_id=self._origin)
         finally:
             self._pair_task = None
@@ -130,17 +138,20 @@ class DenonBtConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_finish(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         address = self._require_address()
+        _LOGGER.debug("testing the control channel to %s", address)
         try:
             transport = await RfcommTransport.open(address)
             await transport.close()
         except (OSError, TimeoutError) as err:
             _LOGGER.warning("cannot reach %s: %s", address, err)
             self._pending_error = "cannot_connect"
+            self._error_detail = str(err) or type(err).__name__
             if self._origin == "manual":
                 return await self.async_step_manual()
             if self._origin == "paired":
                 return await self.async_step_paired()
             return await self.async_step_found()
+        _LOGGER.info("control channel to %s works; creating entry %r", address, self._name)
         return self.async_create_entry(title=self._name, data={CONF_ADDRESS: address})
 
     async def _pick_step(
@@ -169,7 +180,12 @@ class DenonBtConfigFlow(ConfigFlow, domain=DOMAIN):
                 probatio.Required(CONF_NAME, default=self._name): str,
             }
         )
-        return self.async_show_form(step_id=step_id, data_schema=schema, errors=self._take_pending_error())
+        return self.async_show_form(
+            step_id=step_id,
+            data_schema=schema,
+            errors=self._take_pending_error(),
+            description_placeholders={"detail": self._error_detail},
+        )
 
     def _unconfigured(self, devices: list[ClassicDevice]) -> list[ClassicDevice]:
         configured = {entry.unique_id for entry in self._async_current_entries()}

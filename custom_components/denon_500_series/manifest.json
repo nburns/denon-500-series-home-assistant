@@ -8,6 +8,6 @@
   "integration_type": "device",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/nburns/denon-500-series-home-assistant/issues",
-  "requirements": ["dbus-fast>=2"],
-  "version": "0.3.0"
+  "requirements": ["dbus-fast>=4"],
+  "version": "0.3.1"
 }

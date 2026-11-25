@@ -9,7 +9,7 @@ from homeassistant.core import Event, HomeAssistant
 from .connection import ReceiverConnection, Transport
 from .transport import RfcommTransport
 
-PLATFORMS = [Platform.MEDIA_PLAYER]
+PLATFORMS = [Platform.BUTTON, Platform.MEDIA_PLAYER]
 
 type DenonBtConfigEntry = ConfigEntry[ReceiverConnection]
 

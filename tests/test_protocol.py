@@ -60,3 +60,10 @@ def test_decode_feature_state() -> None:
         volume=protocol.Volume(raw=0x62, max_raw=0xC5, relative=False),
         sound_mode="Multi Ch Stereo",
     )
+
+
+def test_quick_select_matches_the_app() -> None:
+    assert protocol.quick_select(1).encode() == bytes.fromhex("41 54 00 08 02 00 01 fd")
+    assert protocol.quick_select(4).encode() == bytes.fromhex("41 54 00 08 02 00 04 fa")
+    with pytest.raises(ValueError):
+        protocol.quick_select(5)

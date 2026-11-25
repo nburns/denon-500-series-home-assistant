@@ -64,6 +64,7 @@ class GeneralCommand(IntEnum):
     SUPPORTED_SOURCES = 0x04
     SUPPORTED_FEATURES = 0x06
     STORAGE_STATE = 0x07
+    QUICK_SELECT = 0x08
     BLUETOOTH_STANDBY = 0x09
     POWER = 0x0A
     CURRENT_SOURCE = 0x0B
@@ -183,6 +184,15 @@ def select_source(source: Source) -> Frame:
     if source is Source.GENERAL:
         raise ValueError("GENERAL is not a selectable source")
     return Frame(Source.GENERAL, GeneralCommand.SELECT_SOURCE, bytes([source]))
+
+
+QUICK_SELECT_SLOTS = 4
+
+
+def quick_select(slot: int) -> Frame:
+    if not 1 <= slot <= QUICK_SELECT_SLOTS:
+        raise ValueError(f"quick select slot must be 1-{QUICK_SELECT_SLOTS}, got {slot}")
+    return Frame(Source.GENERAL, GeneralCommand.QUICK_SELECT, bytes([0, slot]))
 
 
 def volume_up(active: Source) -> Frame:

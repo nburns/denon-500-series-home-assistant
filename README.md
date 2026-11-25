@@ -62,7 +62,8 @@ retry, then disable it to download the log. The log shows the adapter used,
 every device the scan sees with its signal strength and pairing state, each
 BlueZ call and its error, and the device's state after pairing.
 
-You get one media player with power, volume, mute and input selection. It
+You get a media player with power, volume, mute and input selection, plus
+Quick Select 1-4 buttons that recall the receiver's saved presets. It
 shows as unavailable while the Bluetooth link is down and reconnects on its
 own. Settings → Devices & services → the integration → Download diagnostics
 gives the current receiver state for bug reports.

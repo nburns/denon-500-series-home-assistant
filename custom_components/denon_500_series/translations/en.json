@@ -66,5 +66,12 @@
     "abort": {
       "already_configured": "This receiver is already configured."
     }
+  },
+  "entity": {
+    "button": {
+      "quick_select": {
+        "name": "Quick Select {slot}"
+      }
+    }
   }
 }

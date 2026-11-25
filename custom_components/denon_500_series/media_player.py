@@ -1,23 +1,20 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable
-
 from homeassistant.components.media_player import (
     MediaPlayerDeviceClass,
     MediaPlayerEntity,
     MediaPlayerEntityFeature,
     MediaPlayerState,
 )
-from homeassistant.const import CONF_ADDRESS
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
-from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import DenonBtConfigEntry
-from .connection import ReceiverConnection, ReceiverState
-from .const import DOMAIN, SOURCE_LABELS
-from .protocol import ProtocolError, Source
+from .connection import ReceiverState
+from .const import SOURCE_LABELS
+from .entity import DenonBtEntity
+from .protocol import Source
 
 # What the AVR-S510BT reports; shown only until the receiver answers the supported-sources query.
 _DEFAULT_SOURCES = (
@@ -45,10 +42,8 @@ async def async_setup_entry(
     async_add_entities([DenonBtMediaPlayer(entry, entry.runtime_data)])
 
 
-class DenonBtMediaPlayer(MediaPlayerEntity):
-    _attr_has_entity_name = True
+class DenonBtMediaPlayer(DenonBtEntity, MediaPlayerEntity):
     _attr_name = None
-    _attr_should_poll = False
     _attr_device_class = MediaPlayerDeviceClass.RECEIVER
     _attr_supported_features = (
         MediaPlayerEntityFeature.TURN_ON
@@ -59,34 +54,8 @@ class DenonBtMediaPlayer(MediaPlayerEntity):
         | MediaPlayerEntityFeature.SELECT_SOURCE
     )
 
-    def __init__(self, entry: DenonBtConfigEntry, connection: ReceiverConnection) -> None:
-        self._connection = connection
-        address: str = entry.data[CONF_ADDRESS]
-        self._attr_unique_id = address
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, address)},
-            connections={(CONNECTION_BLUETOOTH, address)},
-            manufacturer="Denon",
-            name=entry.title,
-        )
-        self._update_attrs(connection.state)
-
-    async def async_added_to_hass(self) -> None:
-        self.async_on_remove(self._connection.add_listener(self._handle_state))
-        self._update_attrs(self._connection.state)
-
-    @callback
-    def async_entity_id_changed(self, old_entity_id: str) -> None:
-        # Nothing here is keyed on entity_id; overriding opts into in-place renames.
-        pass
-
-    @callback
-    def _handle_state(self, state: ReceiverState) -> None:
-        self._update_attrs(state)
-        self.async_write_ha_state()
-
     def _update_attrs(self, state: ReceiverState) -> None:
-        self._attr_available = state.connected
+        super()._update_attrs(state)
         self._attr_state = None if state.power is None else MediaPlayerState.ON if state.power else MediaPlayerState.OFF
         volume = state.volume
         self._attr_volume_level = None if volume is None or volume.max_raw == 0 else volume.raw / volume.max_raw
@@ -95,12 +64,6 @@ class DenonBtMediaPlayer(MediaPlayerEntity):
         sources = state.supported_sources or _DEFAULT_SOURCES
         self._attr_source_list = [SOURCE_LABELS.get(s, s.name) for s in sources]
         self._attr_sound_mode = state.sound_mode
-
-    async def _run(self, command: Awaitable[object]) -> None:
-        try:
-            await command
-        except (ConnectionError, TimeoutError, ProtocolError, RuntimeError) as err:
-            raise HomeAssistantError(str(err)) from err
 
     async def async_turn_on(self) -> None:
         await self._run(self._connection.set_power(True))

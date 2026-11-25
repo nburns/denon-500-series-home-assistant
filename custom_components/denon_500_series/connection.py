@@ -228,6 +228,10 @@ class ReceiverConnection:
         async with self._command_lock:
             await self._send(protocol.select_source(source))
 
+    async def quick_select(self, slot: int) -> None:
+        async with self._command_lock:
+            await self._send(protocol.quick_select(slot))
+
     async def volume_step(self, up: bool) -> protocol.Volume:
         async with self._command_lock:
             return await self._volume_step(up)

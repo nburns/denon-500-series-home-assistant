@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/badge.png" alt="" width="128" height="128"></p>
+<p align="center"><img src="assets/badge.png" alt="" width="256"></p>
 
 # Denon 500 Series for Home Assistant
 

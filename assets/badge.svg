@@ -6,12 +6,12 @@
     </filter>
   </defs>
   <rect x="20" y="168" width="472" height="162" rx="8" fill="#0b0b0c"/>
-  <g fill="none" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" stroke="#8a8d93">
+  <g fill="none" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" stroke="#55585e">
   <rect x="20" y="168" width="472" height="162" rx="8"/>
-  <path d="M44 330v8a8 8 0 0 0 8 8h48a8 8 0 0 0 8-8v-8Z" fill="#8a8d93"/>
-  <path d="M404 330v8a8 8 0 0 0 8 8h48a8 8 0 0 0 8-8v-8Z" fill="#8a8d93"/>
+  <path d="M44 330v8a8 8 0 0 0 8 8h48a8 8 0 0 0 8-8v-8Z" fill="#55585e"/>
+  <path d="M404 330v8a8 8 0 0 0 8 8h48a8 8 0 0 0 8-8v-8Z" fill="#55585e"/>
   <circle cx="77" cy="228" r="27"/>
-  <circle cx="77" cy="302" r="10" fill="#8a8d93" stroke="none"/>
+  <circle cx="77" cy="302" r="10" fill="#55585e" stroke="none"/>
   <circle cx="436" cy="228" r="35"/>
   <path d="M127 330V258H385V330"/>
 </g>

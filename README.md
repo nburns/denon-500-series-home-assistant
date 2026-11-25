@@ -4,34 +4,46 @@
 
 Home Assistant integration that controls a Denon AVR-S510BT (and probably the
 other "500 Series Remote" models) over the receiver's Bluetooth serial port.
-It provides a media player, tuner and Quick Select controls. The
-protocol is documented in [PROTOCOL.md](PROTOCOL.md).
+It provides a media player plus tuner, Quick Select and sound mode controls.
+The protocol is documented in [PROTOCOL.md](PROTOCOL.md).
 
 ## How it works
 
 The integration keeps one RFCOMM connection to SPP channel 2 open from inside
-Home Assistant. It uses only the Python standard library (no add-on, broker or
-extra packages) and updates state from what the receiver pushes, without
-polling. If the link drops, it reconnects with backoff (5 s up to 5 min).
+Home Assistant, using a standard library socket; no add-on or broker. It
+updates state from what the receiver pushes, without polling. If the link
+drops, it reconnects with backoff (5 s up to 5 min). Scanning and pairing talk
+to BlueZ over D-Bus with `dbus-fast`, which Home Assistant already ships.
 
 ## What you get
 
-- a media player with power, volume, mute and input selection. On FM/AM it
-  shows the station and preset, and next/previous step through presets. On
-  USB it adds play, pause, next and previous.
-- Quick Select 1-4 buttons and a Next sound mode button.
-- a Tuner preset picker and a Tuning mode (auto/manual) setting, available
-  while FM or AM is the input.
-- a `denon_500_series.store_preset` action that saves the playing station to
-  a preset slot (1-56).
+| Remote button | In Home Assistant |
+|---|---|
+| POWER | Media player on/off |
+| Input buttons | Media player source list |
+| VOLUME, MUTE | Media player volume and mute. The receiver only steps volume, so setting a level steps toward it. |
+| QUICK SELECT 1-4 | Quick Select 1-4 buttons |
+| SOUND MODE | Next sound mode button; the current mode shows on the media player |
+| CHANNEL +/- | Media player next/previous on FM/AM |
+| MEMORY | `denon_500_series.store_preset` action: saves the playing station to preset 1-56 |
+| MODE | Tuning mode select (auto/manual), available on FM/AM |
+| ⏮ ⏯ ⏭ | Media player previous, play/pause and next on USB |
 
-Commands for presets, tuning mode, USB playback and sound mode are taken from
-the official app but not yet confirmed on a receiver; debug logging shows
-what is sent and received.
+On FM/AM the media player also shows the station and preset number, and a
+Tuner preset select recalls any of the 56 presets by frequency.
 
-The integration shows as unavailable while the Bluetooth link is down and reconnects on its
-own. Settings → Devices & services → the integration → Download diagnostics
-gives the current receiver state for bug reports.
+Confirmed on an AVR-S510BT: reading power, input, volume and the tuner
+station, and stepping volume. The other commands are taken from the official
+app and not yet confirmed; debug logging shows what is sent and received.
+
+Not available over Bluetooth: TUNE +/-, SLEEP, ECO, CH LEVEL, RESTORER,
+AUDIO DELAY, SEARCH and the menu buttons (SETUP, OPTION, INFO, BACK, arrows,
+ENTER). The official app doesn't send them either. Input names are fixed;
+names set on the receiver aren't reported.
+
+The integration shows as unavailable while the Bluetooth link is down and
+reconnects on its own. Settings → Devices & services → the integration →
+Download diagnostics gives the current receiver state for bug reports.
 
 ## Requirements
 
@@ -65,8 +77,8 @@ gives the current receiver state for bug reports.
 
 Pairing from the form needs no PIN (the S510BT shows none). If BlueZ forgot
 the receiver since the scan, pairing scans for it again first. If a receiver
-does ask for a PIN, "0000" is sent. If that fails, pair it with `bluetoothctl` instead, then pick it
-from the list. `bluetoothctl` is available in the Terminal & SSH add-on, on the
+does ask for a PIN, "0000" is sent. If that fails, pair it with `bluetoothctl`
+instead, then pick it from the list. `bluetoothctl` is available in the Terminal & SSH add-on, on the
 HA OS console (type `login`), or with `docker exec -it homeassistant
 bluetoothctl`:
 
@@ -96,3 +108,15 @@ uv run python -m tools.cli -v monitor 60  # print state changes, with raw frames
 
 On macOS, `/dev/cu.DenonAVR-S510BT` is bound to SPP channel 1, which never
 answers. `tools/macos_transport.py` opens channel 2 through IOBluetooth instead.
+
+The integration icon is drawn in `assets/icon.svg` and `assets/dark_icon.svg`;
+Home Assistant serves the PNGs in `custom_components/denon_500_series/brand/`.
+After editing the SVGs, regenerate them:
+
+```sh
+for v in icon dark_icon; do
+  rsvg-convert -w 256 -h 256 -o "custom_components/denon_500_series/brand/$v.png" "assets/$v.svg"
+  rsvg-convert -w 512 -h 512 -o "custom_components/denon_500_series/brand/$v@2x.png" "assets/$v.svg"
+done
+rsvg-convert -w 1024 -o assets/badge.png assets/badge.svg
+```

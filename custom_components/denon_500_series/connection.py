@@ -71,6 +71,8 @@ class ReceiverConnection:
         self._waiters: list[_Waiter] = []
         self._listeners: list[Callable[[ReceiverState], None]] = []
         self._command_lock = asyncio.Lock()
+        # Latest requested raw volume; a seek in progress follows it so slider drags don't queue stale targets.
+        self._volume_target: int | None = None
         self._task: asyncio.Task[None] | None = None
         self._connected = asyncio.Event()
         self.state = ReceiverState()
@@ -236,21 +238,31 @@ class ReceiverConnection:
         return (await self._request(frame, protocol.VolumeState)).volume
 
     async def set_volume_raw(self, target: int) -> protocol.Volume:
-        """Step toward an absolute raw level; the protocol has no direct volume set."""
+        """Step toward an absolute raw level; the protocol has no direct volume set.
+
+        Stops on the target or as soon as a step passes it, since one press may move more than one raw unit.
+        """
+        self._volume_target = target
         async with self._command_lock:
             volume = self.state.volume
             if volume is None:
                 # Volume is only reported in reply to a step, so take one to learn it.
                 volume = await self._volume_step(up=False)
-            target = max(0, min(target, volume.max_raw))
             for _ in range(MAX_VOLUME_STEPS):
-                if volume.raw == target:
+                wanted = max(0, min(self._volume_target, volume.max_raw))
+                if volume.raw == wanted:
+                    _LOGGER.debug("volume at raw %d (%s)", volume.raw, volume.display)
                     return volume
+                up = wanted > volume.raw
                 previous = volume.raw
-                volume = await self._volume_step(up=target > volume.raw)
+                volume = await self._volume_step(up=up)
+                _LOGGER.debug("volume %s: raw %d -> %d, target %d", "+" if up else "-", previous, volume.raw, wanted)
                 if volume.raw == previous:
-                    raise protocol.ProtocolError(f"volume stuck at raw {previous} while seeking {target}")
-            raise protocol.ProtocolError(f"volume did not reach raw {target} in {MAX_VOLUME_STEPS} steps")
+                    raise protocol.ProtocolError(f"volume stuck at raw {previous} while seeking {wanted}")
+                if (volume.raw > wanted) == up and volume.raw != wanted and self._volume_target == wanted:
+                    _LOGGER.debug("step passed raw %d; stopping at %d (%s)", wanted, volume.raw, volume.display)
+                    return volume
+            raise protocol.ProtocolError(f"volume did not reach raw {self._volume_target} in {MAX_VOLUME_STEPS} steps")
 
     async def set_mute(self, on: bool) -> None:
         async with self._command_lock:

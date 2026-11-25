@@ -10,11 +10,12 @@ from custom_components.denon_500_series.protocol import Frame, FrameDecoder, Sou
 class SimulatedReceiver:
     """Answers the way the real receiver did in live testing."""
 
-    def __init__(self, *, standby_bt: bool = True, volume_raw: int = 0x4D) -> None:
+    def __init__(self, *, standby_bt: bool = True, volume_raw: int = 0x4D, volume_step: int = 1) -> None:
         self.power = True
         self.standby_bt = standby_bt
         self.source = Source.BLUETOOTH
         self.volume_raw = volume_raw
+        self.volume_step = volume_step
         self.received: list[Frame] = []
 
     def handle(self, frame: Frame) -> list[Frame]:
@@ -36,7 +37,7 @@ class SimulatedReceiver:
                 self.source = Source(p[0])
                 return [Frame(g, 0x01, p)]
             case (major, SourceCommand.VOLUME_UP | SourceCommand.VOLUME_DOWN, b"") if major == s:
-                self.volume_raw += 1 if frame.minor == SourceCommand.VOLUME_UP else -1
+                self.volume_raw += self.volume_step if frame.minor == SourceCommand.VOLUME_UP else -self.volume_step
                 return [Frame(s, 0x02, bytes([0xC5, self.volume_raw, 0]))]
             case _:
                 return []
@@ -112,6 +113,36 @@ async def test_set_volume_seeks_by_stepping() -> None:
         volume = await rx.set_volume_raw(0x50)
         assert volume.raw == 0x50 == receiver.volume_raw
         assert rx.state.volume == volume
+    finally:
+        await rx.stop()
+
+
+def _volume_presses(receiver: SimulatedReceiver) -> int:
+    steps = {SourceCommand.VOLUME_UP, SourceCommand.VOLUME_DOWN}
+    return sum(1 for f in receiver.received if f.major == receiver.source and f.minor in steps)
+
+
+async def test_set_volume_stops_when_a_press_passes_the_target() -> None:
+    receiver = SimulatedReceiver(volume_raw=0x40, volume_step=2)
+    rx, _ = await _connect(receiver)
+    try:
+        volume = await rx.set_volume_raw(0x45)
+        assert volume.raw == receiver.volume_raw == 0x46
+        # One press down to learn the level (0x3E), then four up; no back-and-forth around 0x45.
+        assert _volume_presses(receiver) == 5
+    finally:
+        await rx.stop()
+
+
+async def test_set_volume_follows_the_latest_target_during_a_drag() -> None:
+    receiver = SimulatedReceiver(volume_raw=0x40)
+    rx, _ = await _connect(receiver)
+    try:
+        results = await asyncio.gather(*(rx.set_volume_raw(t) for t in (0x48, 0x50, 0x44)))
+        assert receiver.volume_raw == 0x44
+        assert [v.raw for v in results] == [0x44, 0x44, 0x44]
+        # One press to learn the level (0x3F), then straight to the last target with no detours.
+        assert _volume_presses(receiver) == 6
     finally:
         await rx.stop()
 

@@ -34,10 +34,12 @@ polling. If the link drops, it reconnects with backoff (5 s up to 5 min).
    straight away. You can also copy `custom_components/denon_500_series` into
    your HA config's `custom_components/` and restart.
 2. **Pick or pair the receiver.** The form lists the Classic Bluetooth devices
-   already paired with the host, Denon receivers first. To pair a new one, put
-   the receiver in Bluetooth pairing mode and choose "Scan for devices". It
-   then appears as "pair now", and picking it pairs it before setup finishes.
-   You can also type an address.
+   already paired with the host, Denon receivers first. To pair a new one, turn
+   the receiver on, press and hold BLUETOOTH on its remote for about 3 seconds
+   (pairing mode), then choose "Scan for devices". The scan stops as soon as a
+   receiver shows up, or after a minute. The receiver then appears as "pair
+   now", and picking it pairs it before setup finishes. You can also type an
+   address.
 
 Pairing from the form uses Bluetooth's Just Works method, with no PIN. If the
 receiver insists on a PIN, pair it with `bluetoothctl` instead, then pick it

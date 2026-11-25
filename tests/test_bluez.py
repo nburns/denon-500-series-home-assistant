@@ -23,3 +23,8 @@ def test_lists_classic_devices_paired_then_receivers_first() -> None:
         ClassicDevice("AA:AA:AA:AA:AA:AA", "Keyboard", paired=True),
         ClassicDevice("DD:DD:DD:DD:DD:DD", "Neighbour TV", paired=False),
     ]
+
+
+def test_recognizes_receivers_by_address_prefix_like_the_app() -> None:
+    assert ClassicDevice("00:1F:47:12:34:56", "00-1F-47-12-34-56", paired=False).looks_like_receiver
+    assert not ClassicDevice("A0:E9:DB:01:EE:A3", "Philips SPA4270", paired=False).looks_like_receiver

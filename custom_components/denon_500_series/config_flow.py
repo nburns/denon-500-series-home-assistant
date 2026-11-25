@@ -24,7 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 
 _MAC = re.compile(r"^[0-9A-F]{2}([:-]?)[0-9A-F]{2}(\1[0-9A-F]{2}){4}$")
 DEFAULT_NAME = "Denon AVR"
-SCAN_SECONDS = 12.0
+SCAN_SECONDS = 60.0
 SCAN_OPTION = "scan"
 
 
@@ -90,7 +90,7 @@ class DenonBtConfigFlow(ConfigFlow, domain=DOMAIN):
         else:
             self._devices = found
             self._scanned = True
-            if not any(not d.paired for d in found):
+            if not any(d.looks_like_receiver and not d.paired for d in found):
                 self._pending_error = "no_devices_found"
         finally:
             self._scan_task = None
@@ -155,7 +155,7 @@ class DenonBtConfigFlow(ConfigFlow, domain=DOMAIN):
             }
         )
         receiver = next((d.address for d in devices if d.looks_like_receiver and d.address not in configured), None)
-        suggested = {CONF_ADDRESS: self._address or receiver or SCAN_OPTION}
+        suggested = {CONF_ADDRESS: self._address or receiver}
         return self.async_show_form(
             step_id="user", data_schema=self.add_suggested_values_to_schema(schema, suggested), errors=errors
         )

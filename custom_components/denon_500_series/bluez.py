@@ -13,6 +13,9 @@ _BLUEZ = "org.bluez"
 _ADAPTER_INTERFACE = "org.bluez.Adapter1"
 _DEVICE_INTERFACE = "org.bluez.Device1"
 PAIR_TIMEOUT = 60.0
+POLL_INTERVAL = 1.0
+# Address prefixes the official app treats as Denon/Marantz receivers.
+_RECEIVER_OUIS = frozenset({"00:1F:47", "08:EF:3B", "C4:30:18", "54:15:89"})
 
 
 class BluezError(Exception):
@@ -27,7 +30,7 @@ class ClassicDevice:
 
     @property
     def looks_like_receiver(self) -> bool:
-        return "denon" in self.name.lower()
+        return self.address[:8].upper() in _RECEIVER_OUIS or "denon" in self.name.lower()
 
 
 async def _connect() -> MessageBus:
@@ -77,8 +80,11 @@ async def paired_classic_devices() -> list[ClassicDevice]:
     return [d for d in parse_managed_objects(objects) if d.paired]
 
 
-async def scan_classic_devices(duration: float) -> list[ClassicDevice]:
-    """Runs a BR/EDR inquiry and returns paired and newly found devices, likely receivers first."""
+async def scan_classic_devices(max_duration: float) -> list[ClassicDevice]:
+    """Runs a BR/EDR inquiry until an unpaired receiver shows up or max_duration passes.
+
+    Returns paired and newly found devices, likely receivers first.
+    """
     bus = await _connect()
     try:
         adapter = _adapter_path(await _managed_objects(bus))
@@ -87,14 +93,20 @@ async def scan_classic_devices(duration: float) -> list[ClassicDevice]:
         )
         await _call(bus, adapter, _ADAPTER_INTERFACE, "StartDiscovery")
         try:
-            await asyncio.sleep(duration)
+            deadline = asyncio.get_running_loop().time() + max_duration
+            while True:
+                devices = parse_managed_objects(await _managed_objects(bus))
+                if any(d.looks_like_receiver and not d.paired for d in devices):
+                    break
+                if asyncio.get_running_loop().time() >= deadline:
+                    break
+                await asyncio.sleep(POLL_INTERVAL)
         finally:
             await _call(bus, adapter, _ADAPTER_INTERFACE, "StopDiscovery")
-        objects = await _managed_objects(bus)
     finally:
         # Disconnecting also drops this client's discovery session and filter if StopDiscovery never ran.
         bus.disconnect()
-    return parse_managed_objects(objects)
+    return devices
 
 
 async def pair(address: str) -> None:

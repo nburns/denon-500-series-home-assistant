@@ -1,6 +1,6 @@
 from dbus_fast import Variant
 
-from custom_components.denon_500_series.bluez import PairedDevice, parse_managed_objects
+from custom_components.denon_500_series.bluez import ClassicDevice, parse_managed_objects
 
 
 def _device(address: str, alias: str, *, paired: bool, classic: bool) -> dict[str, dict[str, Variant]]:
@@ -10,7 +10,7 @@ def _device(address: str, alias: str, *, paired: bool, classic: bool) -> dict[st
     return {"org.bluez.Device1": props}
 
 
-def test_lists_paired_classic_devices_receiver_first() -> None:
+def test_lists_classic_devices_paired_then_receivers_first() -> None:
     objects: dict[str, dict[str, dict[str, Variant]]] = {
         "/org/bluez/hci0": {"org.bluez.Adapter1": {}},
         "/org/bluez/hci0/dev_A": _device("AA:AA:AA:AA:AA:AA", "Keyboard", paired=True, classic=True),
@@ -19,6 +19,7 @@ def test_lists_paired_classic_devices_receiver_first() -> None:
         "/org/bluez/hci0/dev_D": _device("DD:DD:DD:DD:DD:DD", "Neighbour TV", paired=False, classic=True),
     }
     assert parse_managed_objects(objects) == [
-        PairedDevice("08:EF:3B:36:B7:FF", "Denon AVR-S510BT"),
-        PairedDevice("AA:AA:AA:AA:AA:AA", "Keyboard"),
+        ClassicDevice("08:EF:3B:36:B7:FF", "Denon AVR-S510BT", paired=True),
+        ClassicDevice("AA:AA:AA:AA:AA:AA", "Keyboard", paired=True),
+        ClassicDevice("DD:DD:DD:DD:DD:DD", "Neighbour TV", paired=False),
     ]

@@ -29,29 +29,27 @@ polling. If the link drops, it reconnects with backoff (5 s up to 5 min).
 
 ## Setup
 
-1. **Pair the receiver with the HA host.** Home Assistant's UI can't pair
-   Classic Bluetooth devices, so use `bluetoothctl` from one of:
-   - the Terminal & SSH add-on
-   - the HA OS console (type `login`)
-   - `docker exec -it homeassistant bluetoothctl`
+1. **Install.** Settings → Marketplace → Add from link →
+   `nburns/denon-500-series-home-assistant` → Install. The setup form opens
+   straight away. You can also copy `custom_components/denon_500_series` into
+   your HA config's `custom_components/` and restart.
+2. **Pick or pair the receiver.** The form lists the Classic Bluetooth devices
+   already paired with the host, Denon receivers first. To pair a new one, put
+   the receiver in Bluetooth pairing mode and choose "Scan for devices". It
+   then appears as "pair now", and picking it pairs it before setup finishes.
+   You can also type an address.
 
-   Put the receiver in pairing mode, then run:
+Pairing from the form uses Bluetooth's Just Works method, with no PIN. If the
+receiver insists on a PIN, pair it with `bluetoothctl` instead, then pick it
+from the list. `bluetoothctl` is available in the Terminal & SSH add-on, on the
+HA OS console (type `login`), or with `docker exec -it homeassistant
+bluetoothctl`:
 
-   ```
-   scan on
-   pair 08:EF:3B:36:B7:FF
-   trust 08:EF:3B:36:B7:FF
-   scan off
-   ```
-
-   Stay in the session until pairing finishes, in case it asks for
-   confirmation.
-2. **Install.** Settings → Marketplace → Add from link →
-   `https://github.com/nburns/denon-500-series-home-assistant` → Install. The setup form opens
-   straight away. You can also copy `custom_components/denon_500_series` into your HA
-   config's `custom_components/` and restart.
-3. **Configure.** The form lists the Classic Bluetooth devices paired with the
-   host, Denon receivers first. You can also type an address.
+```
+scan on
+pair 08:EF:3B:36:B7:FF
+scan off
+```
 
 You get one media player with power, volume, mute and input selection. It
 shows as unavailable while the Bluetooth link is down and reconnects on its

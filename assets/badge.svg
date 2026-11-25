@@ -28,17 +28,21 @@
       <circle cx="392.6" cy="115.5" r="5.5"/>
       </g>
     </mask>
+    <filter id="phosphor" x="-20%" y="-40%" width="140%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="bloom"/>
+      <feMerge><feMergeNode in="bloom"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
   <g mask="url(#splat)">
     <rect width="512" height="512" fill="url(#bg)"/>
     <rect width="512" height="512" fill="url(#glow)"/>
   </g>
-  <g transform="translate(256 256) scale(0.66) translate(-256 -257)" fill="none" stroke="#F5F5F7" stroke-width="12" stroke-linejoin="round" stroke-linecap="round">
+  <g filter="url(#phosphor)" transform="translate(256 256) scale(0.66) translate(-256 -257)" fill="none" stroke="#7DF9E8" stroke-width="12" stroke-linejoin="round" stroke-linecap="round">
   <rect x="20" y="168" width="472" height="162" rx="8"/>
   <path d="M44 330v8a8 8 0 0 0 8 8h48a8 8 0 0 0 8-8v-8"/>
   <path d="M404 330v8a8 8 0 0 0 8 8h48a8 8 0 0 0 8-8v-8"/>
   <circle cx="77" cy="228" r="27"/>
-  <circle cx="77" cy="302" r="10" fill="#F5F5F7" stroke="none"/>
+  <circle cx="77" cy="302" r="10" fill="#7DF9E8" stroke="none"/>
   <circle cx="436" cy="228" r="35"/>
   <rect x="136" y="200" width="240" height="36" rx="4"/>
   <path d="M127 330V258H385V330"/>

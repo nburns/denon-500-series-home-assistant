@@ -1,19 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 148 512 224">
   <defs>
-    <filter id="phosphor" x="-10%" y="-20%" width="120%" height="140%">
+    <filter id="phosphor" x="-20%" y="-60%" width="140%" height="220%">
       <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="bloom"/>
       <feMerge><feMergeNode in="bloom"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect x="20" y="168" width="472" height="162" rx="8" fill="#3a3b3f"/>
-  <g filter="url(#phosphor)" fill="none" stroke="#7DF9E8" stroke-width="12" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="20" y="168" width="472" height="162" rx="8" fill="#0b0b0c"/>
+  <g fill="none" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" stroke="#8a8d93">
   <rect x="20" y="168" width="472" height="162" rx="8"/>
   <path d="M44 330v8a8 8 0 0 0 8 8h48a8 8 0 0 0 8-8v-8"/>
   <path d="M404 330v8a8 8 0 0 0 8 8h48a8 8 0 0 0 8-8v-8"/>
   <circle cx="77" cy="228" r="27"/>
-  <circle cx="77" cy="302" r="10" fill="#7DF9E8" stroke="none"/>
+  <circle cx="77" cy="302" r="10" fill="#8a8d93" stroke="none"/>
   <circle cx="436" cy="228" r="35"/>
-  <rect x="136" y="200" width="240" height="36" rx="4"/>
   <path d="M127 330V258H385V330"/>
 </g>
+  <g fill="none" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" stroke="#7DF9E8" filter="url(#phosphor)">
+  <rect x="136" y="200" width="240" height="36" rx="4"/>
+  </g>
 </svg>

@@ -23,7 +23,7 @@ to BlueZ over D-Bus with `dbus-fast`, which Home Assistant already ships.
 | Input buttons | Media player source list |
 | VOLUME, MUTE | Media player volume and mute. The receiver only steps volume, so setting a level steps toward it. |
 | QUICK SELECT 1-4 | Quick Select 1-4 buttons |
-| SOUND MODE | Next sound mode button; the current mode shows on the media player |
+| SOUND MODE | Sound mode button (steps to the next mode); the current mode shows on the media player |
 | CHANNEL +/- | Media player next/previous on FM/AM |
 | MEMORY | `denon_500_series.store_preset` action: saves the playing station to preset 1-56 |
 | MODE | Tuning mode select (auto/manual), available on FM/AM |

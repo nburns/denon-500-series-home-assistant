@@ -53,9 +53,12 @@ Download diagnostics gives the current receiver state for bug reports.
   namespace.
 - A Bluetooth adapter that supports Classic Bluetooth (BR/EDR), within range of
   the receiver. BLE-only adapters won't work.
-- No Bluetooth audio service on the host (PipeWire or PulseAudio with Bluetooth
-  support). If one is present, it may connect audio to the receiver, and the
-  receiver then switches its input to Bluetooth.
+- No Bluetooth audio for the receiver on the host. HA OS has no Bluetooth audio
+  service, so there is nothing to do. On a Linux desktop running PipeWire or
+  PulseAudio, the audio service may connect to the receiver as a speaker, and
+  the receiver then switches its input to Bluetooth. The integration only opens
+  the control channel and can't prevent this; see
+  [Bluetooth audio on the host](#bluetooth-audio-on-the-host).
 - On the receiver: Setup → General → BluetoothStandby → On. Without it the
   receiver turns Bluetooth off in standby and can't be woken. The integration
   refuses to power off unless this setting is confirmed on.
@@ -94,6 +97,25 @@ Settings → Devices & services → Denon 500 Series → ⋮ → Enable debug lo
 retry, then disable it to download the log. The log shows the adapter used,
 every device the scan sees with its signal strength and pairing state, each
 BlueZ call and its error, and the device's state after pairing.
+
+### Bluetooth audio on the host
+
+With PipeWire, a WirePlumber rule (0.5 or newer) keeps it away from the
+receiver. Put it in `~/.config/wireplumber/wireplumber.conf.d/denon.conf` (or
+the system-wide `/etc/wireplumber/wireplumber.conf.d/`), with the receiver's
+address, then restart WirePlumber:
+
+```
+monitor.bluez.rules = [
+  {
+    matches = [ { device.name = "bluez_card.08_EF_3B_36_B7_FF" } ]
+    actions = { update-props = { device.disabled = true } }
+  }
+]
+```
+
+With PulseAudio, stop loading `module-bluetooth-discover` (comment it out in
+`/etc/pulse/default.pa`). That turns off Bluetooth audio for every device.
 
 ## Development
 

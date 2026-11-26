@@ -2,6 +2,8 @@
 
 # Denon 500 Series for Home Assistant
 
+[![Open your Home Assistant instance and open this repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=nburns&repository=denon-500-series-home-assistant&category=integration)
+
 Home Assistant integration that controls a Denon AVR-S510BT (and probably the
 other "500 Series Remote" models) over the receiver's Bluetooth serial port.
 It provides a media player plus tuner, Quick Select and sound mode controls.
@@ -65,9 +67,8 @@ Download diagnostics gives the current receiver state for bug reports.
 
 ## Setup
 
-1. **Install.**
-   [![Open your Home Assistant instance and open this repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=nburns&repository=denon-500-series-home-assistant&category=integration)
-   → Install. Or: Settings → Marketplace → Add from link →
+1. **Install.** Use the Marketplace button at the top of this page →
+   Install. Or: Settings → Marketplace → Add from link →
    `nburns/denon-500-series-home-assistant` → Install. The setup form opens
    straight away. You can also copy `custom_components/denon_500_series` into
    your HA config's `custom_components/` and restart.

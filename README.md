@@ -32,8 +32,8 @@ to BlueZ over D-Bus with `dbus-fast`, which Home Assistant already ships.
 On FM/AM the media player also shows the station and preset number, and a
 Tuner preset select recalls any of the 56 presets by frequency.
 
-Confirmed on an AVR-S510BT: reading power, input, volume and the tuner
-station, and stepping volume. The other commands are taken from the official
+Confirmed on an AVR-S510BT: reading power, input, volume, the tuner station
+and the preset list, stepping volume, and powering off. The other commands are taken from the official
 app and not yet confirmed; debug logging shows what is sent and received.
 
 Not available over Bluetooth: TUNE +/-, SLEEP, ECO, CH LEVEL, RESTORER,

@@ -110,5 +110,7 @@ access. The app can only do what's listed above.
 ## Verified live (2026-11-25)
 
 Power query, Bluetooth standby query, current source, and volume up/down with
-level replies all work on channel 2. Still unverified: power on/off, source
-select, mute, and the sound-mode button.
+level replies all work on channel 2. Power off is acknowledged and the link
+stays up in standby. On FM, the frequency reply (`31`) and the preset table
+(`32`) decode as documented. Still unverified: power on, source select, mute,
+the sound-mode button, Quick Select, and the tuner and USB commands.

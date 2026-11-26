@@ -35,8 +35,9 @@ On FM/AM the media player also shows the station and preset number, and a
 Tuner preset select recalls any of the 56 presets by frequency.
 
 Confirmed on an AVR-S510BT: reading power, input, volume, the tuner station
-and the preset list, stepping volume, and powering off. The other commands are taken from the official
-app and not yet confirmed; debug logging shows what is sent and received.
+and the preset list, stepping volume, and powering off. The other commands are
+taken from the official app and not yet confirmed; debug logging shows what is
+sent and received.
 
 Not available over Bluetooth: TUNE +/-, SLEEP, ECO, CH LEVEL, RESTORER,
 AUDIO DELAY, SEARCH and the menu buttons (SETUP, OPTION, INFO, BACK, arrows,
@@ -67,32 +68,14 @@ Download diagnostics gives the current receiver state for bug reports.
 
 ## Setup
 
-1. **Install.** Use the Marketplace button at the top of this page →
-   Install. Or: Settings → Marketplace → Add from link →
-   `nburns/denon-500-series-home-assistant` → Install. The setup form opens
-   straight away. You can also copy `custom_components/denon_500_series` into
-   your HA config's `custom_components/` and restart.
-2. **Add the receiver.** The form offers three buttons:
-   - **Scan for receivers**: turn the receiver on and hold BLUETOOTH on its
-     remote for about 3 seconds (pairing mode) first. The scan stops as soon as
-     a receiver shows up, or after a minute. Picking the receiver from the
-     results pairs it with the host.
-   - **Choose a paired device**: shown when the host already has paired
-     Classic Bluetooth devices.
-   - **Enter a Bluetooth address**: for a receiver that is already paired.
-
-Pairing from the form needs no PIN (the S510BT shows none). If BlueZ forgot
-the receiver since the scan, pairing scans for it again first. If a receiver
-does ask for a PIN, "0000" is sent. If that fails, pair it with `bluetoothctl`
-instead, then pick it from the list. `bluetoothctl` is available in the Terminal & SSH add-on, on the
-HA OS console (type `login`), or with `docker exec -it homeassistant
-bluetoothctl`:
-
-```
-scan on
-pair 08:EF:3B:36:B7:FF
-scan off
-```
+1. **Install** with the Marketplace button at the top of this page, or
+   Settings → Marketplace → Add from link →
+   `nburns/denon-500-series-home-assistant`. The setup form opens once it's
+   installed.
+2. **Add the receiver.** Turn the receiver on and hold BLUETOOTH on its remote
+   for about 3 seconds to put it in pairing mode, then choose **Scan for
+   receivers** and pick it from the results. No PIN is needed. If the host is
+   already paired with it, use **Choose a paired device** instead.
 
 ### Troubleshooting
 
